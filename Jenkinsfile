@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        REGISTRY_USER = 'YOUR_DOCKERHUB_USERNAME' // Ensure this matches your user profile
+        REGISTRY_USER = 'bhanutejaravutla' // Ensure this matches your user profile
         IMAGE_NAME    = 'secured-app'
         IMAGE_TAG     = "${BUILD_NUMBER}"
     }
