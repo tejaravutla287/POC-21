@@ -58,9 +58,12 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 echo 'Deploying application to local K3s Cluster...'
+                // Update image tags dynamically
                 sh "sed -i 's|image: .*|image: ${REGISTRY_USER}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/deployment.yaml"
-                sh "sudo kubectl apply -f k8s/deployment.yaml"
-                sh "sudo kubectl apply -f k8s/service.yaml"
+                
+                // CRITICAL FIX: Removed 'sudo'. Running native kubectl using mapped config permissions
+                sh "kubectl apply -f k8s/deployment.yaml"
+                sh "kubectl apply -f k8s/service.yaml"
             }
         }
     }
