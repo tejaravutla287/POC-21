@@ -9,7 +9,6 @@ pipeline {
         stage('Initialize & Clean Workspace') {
             steps {
                 echo 'Cleaning up any corrupted artifacts from prior runs...'
-                // Restores the original checked-out pom.xml back to its clean Git baseline
                 sh 'git checkout pom.xml || true'
             }
         }
@@ -23,13 +22,33 @@ pipeline {
 
         stage('Upload to Nexus Repository') {
             steps {
-                echo 'Injecting repository targets and uploading artifact package to Nexus...'
+                echo 'Generating authentication credentials and pushing binary to Nexus...'
                 
-                // FIXED SINGLE-LINE SED EXECUTABLE: No breaks or physical newlines to confuse the shell interpreter
+                // Inject the repository definitions into your pom.xml safely
                 sh "sed -i 's|</project>|<distributionManagement><repository><id>nexus-releases</id><url>http://localhost:8081/repository/maven-releases/</url></repository><snapshotRepository><id>nexus-snapshots</id><url>http://localhost:8081/repository/maven-snapshots/</url></snapshotRepository></distributionManagement></project>|g' pom.xml"
                 
-                // Deploys the package straight into the Nexus repository storage pool
-                sh 'mvn deploy -DskipTests -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true'
+                // DYNAMIC FIX: Creates a runtime settings.xml mapping the exact server IDs to Nexus credentials
+                sh '''
+                cat << 'EOF' > pipeline-settings.xml
+<settings xmlns="http://apache.org" xmlns:xsi="http://w3.org" xsi:schemaLocation="http://apache.org http://apache.org">
+    <servers>
+        <server>
+            <id>nexus-releases</id>
+            <username>admin</username>
+            <password>admin123</password>
+        </server>
+        <server>
+            <id>nexus-snapshots</id>
+            <username>admin</username>
+            <password>admin123</password>
+        </server>
+    </servers>
+</settings>
+EOF
+                '''
+                
+                // Executes deploy using the newly generated authorization blueprint settings file
+                sh 'mvn deploy -s pipeline-settings.xml -DskipTests -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true'
             }
         }
 
