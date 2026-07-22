@@ -25,10 +25,8 @@ pipeline {
             steps {
                 echo 'Injecting repository targets and uploading artifact package to Nexus...'
                 
-                // SAFE INJECTION: Replaces the closing </project> tag with the block inside the tag bounds
-                sh '''
-                sed -i 's|</project>|  <distributionManagement><repository><id>nexus-releases</id><url>http://localhost:8081/repository/maven-releases/</url></repository><snapshotRepository><id>nexus-snapshots</id><url>http://localhost:8081/repository/maven-snapshots/</url></snapshotRepository></distributionManagement>\n</project>|g' pom.xml
-                '''
+                // FIXED SINGLE-LINE SED EXECUTABLE: No breaks or physical newlines to confuse the shell interpreter
+                sh "sed -i 's|</project>|<distributionManagement><repository><id>nexus-releases</id><url>http://localhost:8081/repository/maven-releases/</url></repository><snapshotRepository><id>nexus-snapshots</id><url>http://localhost:8081/repository/maven-snapshots/</url></snapshotRepository></distributionManagement></project>|g' pom.xml"
                 
                 // Deploys the package straight into the Nexus repository storage pool
                 sh 'mvn deploy -DskipTests -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true'
