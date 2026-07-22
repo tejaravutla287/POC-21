@@ -14,6 +14,25 @@ pipeline {
             }
         }
 
+        stage('Upload to Nexus Repository') {
+            steps {
+                echo 'Publishing built JAR file to local Nexus Repository engine...'
+                // Appends a local deployment block to the pom.xml on the fly and triggers upload
+                sh '''
+                cat << 'EOF' >> pom.xml
+                    <distributionManagement>
+                        <repository>
+                            <id>nexus-releases</id>
+                            <url>http://localhost:8081/repository/maven-releases/</url>
+                        </repository>
+                    </distributionManagement>
+                    EOF
+                '''
+                // Deploys the package straight into the Nexus repository storage pool
+                sh 'mvn deploy -DskipTests -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true'
+            }
+        }
+
         stage('Trivy FS Scan') {
             steps {
                 echo 'Scanning compiled project filesystem using local cache bounds...'
